@@ -12,7 +12,8 @@ ui <- fluidPage(
         textInput(inputId = "ic",
         label="Your Identification number:",
         placeholder = "Example: 961212015356"),
-        textOutput("valid")
+        textOutput("valid"),
+        actionButton("submit","Submit")
     ),
     
     
@@ -28,20 +29,24 @@ ui <- fluidPage(
     )
 )
 
+data <- read.csv("ic_state.csv")  # run once per session when declared out of server function
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
     
     valid <- reactive({
         req(input$ic)
         length <- nchar(input$ic)==12
-        shinyFeedback::feedbackWarning("ic",!length,"Please input a valid IC number.","red")
+        shinyFeedback::feedbackWarning("ic",!length,"Please input a valid IC number.","red")    #warning messages
     })
+    
+    ic<-eventReactive(input$submit,{return(input$ic)})    #react only when submit button is clicked, change ic value
     
     output$valid <- renderText(valid())
     
     output$dob <- renderPrint({
-        
-        dob<-substr(input$ic,1,6)
+        req(ic)
+        dob<-substr(ic(),1,6)
         
         if (nchar(dob)==6){
             dob<-fast_strptime(dob,"%y%m%d",tz="",cutoff_2000 = 21L)
@@ -52,9 +57,7 @@ server <- function(input, output) {
     
     output$area <- renderPrint({
         
-        data <- read.csv("ic_state.csv")
-        
-        area<-substr(input$ic,7,8)
+        area<-substr(ic(),7,8)
         
         if (nchar(area)==2){
             data[data$Code==as.numeric(area),2]
@@ -64,7 +67,7 @@ server <- function(input, output) {
     
     output$gender <- renderPrint({
 
-        gender<-substr(input$ic,9,12)
+        gender<-substr(ic(),9,12)
         
         if (nchar(gender)==4){
             gender<-as.numeric(gender)
